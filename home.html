@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VCE Question Search</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/noUiSlider/15.7.0/nouislider.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
+    <style>
+        :root {
+            --primary: #6366f1;
+            --primary-hover: #4f46e5;
+            --background: #f8fafc;
+            --card-bg: #ffffff;
+            --text: #1e293b;
+            --border: #e2e8f0;
+            --shadow: rgba(148, 163, 184, 0.1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background-color: var(--background);
+            color: var(--text);
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 2rem auto;
+            padding: 0 1rem;
+        }
+
+        .search-card {
+            background: var(--card-bg);
+            border-radius: 1rem;
+            padding: 2rem;
+            box-shadow: 0 4px 6px -1px var(--shadow), 0 2px 4px -2px var(--shadow);
+            margin-bottom: 2rem;
+        }
+
+        h1 {
+            font-size: 2.25rem;
+            font-weight: 700;
+            color: var(--primary);
+            text-align: center;
+            margin-bottom: 2rem;
+            letter-spacing: -0.025em;
+        }
+
+        .input-group {
+            margin-bottom: 1.5rem;
+        }
+
+        label {
+            display: block;
+            font-size: 0.875rem;
+            font-weight: 500;
+            margin-bottom: 0.5rem;
+            color: var(--text);
+        }
+
+        input[type="text"], input[type="number"] {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            border: 1px solid var(--border);
+            border-radius: 0.5rem;
+            font-size: 1rem;
+            transition: all 0.2s;
+            background: var(--background);
+        }
+
+        input[type="text"]:focus, input[type="number"]:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+        }
+
+        .year-range {
+            padding: 1rem 0;
+        }
+
+        #year-range-slider {
+            margin: 2rem 0;
+        }
+
+        #year-input {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+
+        .noUi-connect {
+            background: var(--primary);
+        }
+
+        .button-group {
+            display: flex;
+            gap: 1rem;
+            margin-top: 2rem;
+        }
+
+        button {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 0.5rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .primary-button {
+            background: var(--primary);
+            color: white;
+            flex: 2;
+        }
+
+        .primary-button:hover {
+            background: var(--primary-hover);
+        }
+
+        .view-toggle {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .view-button {
+            background: var(--background);
+            color: var(--text);
+            border: 1px solid var(--border);
+        }
+
+        .view-button:hover {
+            background: var(--border);
+        }
+
+        .view-button.active {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+
+        #questions-container {
+            display: grid;
+            gap: 1.5rem;
+            margin-top: 2rem;
+        }
+
+        .list-view {
+            grid-template-columns: 1fr;
+        }
+
+        .gallery-view {
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        }
+
+        .question {
+            background: var(--card-bg);
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            box-shadow: 0 1px 3px var(--shadow);
+            border: 1px solid var(--border);
+            transition: all 0.2s;
+        }
+
+        .question:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px -1px var(--shadow), 0 2px 4px -2px var(--shadow);
+        }
+
+        .images-container {
+            margin-top: 1rem;
+            border-radius: 0.5rem;
+            overflow: hidden;
+        }
+
+        .images-container img {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+
+        #loading {
+            display: none;
+            justify-content: center;
+            align-items: center;
+            margin: 2rem 0;
+        }
+
+        #loading span {
+            width: 2rem;
+            height: 2rem;
+            border: 3px solid var(--primary);
+            border-radius: 50%;
+            border-top-color: transparent;
+            animation: spin 1s linear infinite;
+        }
+
+        #response-time {
+        font-weight: 500;
+        }
+
+        #progress-container {
+        margin-top: 1rem;
+        display: none; /* Hidden by default */
+        }
+
+        #progress-bar {
+        height: 20px;
+        background: var(--primary);
+        width: 0%; /* Initially 0% */
+        border-radius: 5px;
+        transition: width 0.3s ease-in-out;
+        }
+
+        #progress-description {
+        font-size: 1rem;
+        color: var(--text);
+        margin-bottom: 0.5rem;
+        text-align: center;
+        }
+
+        .error {
+            color: #ef4444;
+            text-align: center;
+            padding: 1rem;
+            background: #fef2f2;
+            border-radius: 0.5rem;
+            margin-top: 1rem;
+        }
+                /* Disable text selection */
+        body {
+            user-select: none;
+        }
+
+        /* Disable drag and drop */
+        img {
+            pointer-events: none;
+        }
+
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                margin: 1rem auto;
+            }
+            
+            .gallery-view {
+                grid-template-columns: 1fr;
+            }
+            
+            .button-group {
+                flex-direction: column;
+            }
+            
+            .view-toggle {
+                width: 100%;
+            }
+            
+            .view-button {
+                flex: 1;
+            }
+        }
+        #metrics-pane {
+        display: none;
+        position: fixed;
+        right: 1rem;
+        top: 33%;
+        width: 16rem;
+        background: var(--card-bg);
+        border-radius: 0.75rem;
+        padding: 1.5rem;
+        box-shadow: 0 4px 6px -1px var(--shadow), 0 2px 4px -2px var(--shadow);
+        border: 1px solid var(--border);
+        z-index: 10;
+        }
+
+        @media (max-width: 1200px) {
+            #metrics-pane {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="search-card animate__animated animate__fadeIn">
+            <h1>VCE Exam Question Search</h1>
+
+            <div class="input-group">
+                <label for="subject">Subject</label>
+                <input id="subject" type="text" placeholder="e.g., Physics">
+            </div>
+
+            <div class="input-group">
+                <label for="keyword">Keyword</label>
+                <input id="keyword" type="text" placeholder="e.g., Reduction">
+            </div>
+
+            <div class="input-group year-range">
+                <label for="year-range">Year Range</label>
+                <div id="year-range-slider"></div>
+                <div id="year-input">
+                    <div>
+                        <label>Start Year</label>
+                        <input id="start-year-input" type="number" min="2014" max="2023" value="2014">
+                    </div>
+                    <div>
+                        <label>End Year</label>
+                        <input id="end-year-input" type="number" min="2014" max="2023" value="2023">
+                    </div>
+                </div>
+            </div>
+
+            <div class="button-group">
+                <button class="primary-button" onclick="searchQuestions()">Search Questions</button>
+                <div class="view-toggle">
+                    <button class="view-button active" onclick="setView('list')">List</button>
+                    <button class="view-button" onclick="setView('gallery')">Gallery</button>
+                </div>
+            </div>
+        </div>
+        <div id="response-time" style="text-align: center; margin-top: 1rem; font-size: 0.8rem; color: var(--primary);"></div>
+        
+        <div id="progress-container" style="display: none; margin: 1rem 0;">
+            <div id="progress-description" style="text-align: center; margin-bottom: 0.5rem; font-size: 1rem;"></div>
+            <div style="background: #e2e8f0; border-radius: 5px; height: 20px; width: 100%; overflow: hidden;">
+                <div id="progress-bar" style="height: 100%; width: 0%; background: var(--primary); transition: width 0.3s;"></div>
+            </div>
+        </div>
+        <div id="metrics-pane" class="hidden md:none"></div>
+        <div id="questions-container" class="list-view"></div>
+    </div>
+    
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/noUiSlider/15.7.0/nouislider.min.js"></script>
+    <script>
+        // Disable right-click context menu
+        document.addEventListener('contextmenu', event => event.preventDefault());
+        
+        // Disable key combinations like Ctrl+C, Ctrl+V, Ctrl+U, etc.
+        document.addEventListener('keydown', (event) => {
+            if (event.ctrlKey || event.metaKey) {
+                const forbiddenKeys = ['c', 'u', 's', 'a', 'x', 'p']; // Add more keys if needed
+                if (forbiddenKeys.includes(event.key.toLowerCase())) {
+                    event.preventDefault();
+                }
+            }
+        });
+    </script>
+    <script>
+        const yearSlider = document.getElementById('year-range-slider');
+        const startYearInput = document.getElementById('start-year-input');
+        const endYearInput = document.getElementById('end-year-input');
+        const loadingSpinner = document.getElementById('loading');
+        const questionsContainer = document.getElementById('questions-container');
+
+        noUiSlider.create(yearSlider, {
+            start: [2014, 2023],
+            connect: true,
+            range: {
+                min: 2014,
+                max: 2023
+            },
+            step: 1,
+            tooltips: [true, true],
+            format: {
+                to: (value) => Math.round(value),
+                from: (value) => Number(value)
+            }
+        });
+
+        yearSlider.noUiSlider.on('update', function (values) {
+            startYearInput.value = values[0];
+            endYearInput.value = values[1];
+        });
+
+        startYearInput.addEventListener('input', function () {
+            yearSlider.noUiSlider.set([this.value, null]);
+        });
+
+        endYearInput.addEventListener('input', function () {
+            yearSlider.noUiSlider.set([null, this.value]);
+        });
+
+        function setView(view) {
+            const buttons = document.querySelectorAll('.view-button');
+            buttons.forEach(button => button.classList.remove('active'));
+            
+            const buttonClicked = document.querySelector(`.view-button:nth-child(${view === 'list' ? '1' : '2'})`);
+            buttonClicked.classList.add('active');
+
+            questionsContainer.className = view === 'list' ? 'list-view' : 'gallery-view';
+        }
+
+        async function searchQuestions() {
+        const subject = document.getElementById('subject').value;
+        const keyword = document.getElementById('keyword').value;
+        const startYear = parseInt(startYearInput.value);
+        const endYear = parseInt(endYearInput.value);
+        const responseTimeElement = document.getElementById('response-time');
+
+        if (startYear > endYear) {
+            questionsContainer.innerHTML = '<div class="error">Start year cannot be greater than end year!</div>';
+            return;
+        }
+
+        // Show the progress bar and reset its state
+        const progressContainer = document.getElementById('progress-container');
+        const progressBar = document.getElementById('progress-bar');
+        const progressDescription = document.getElementById('progress-description');
+
+        progressContainer.style.display = 'block';
+        progressBar.style.width = '0%';
+        progressDescription.textContent = 'Initializing search...';
+
+        const startTime = performance.now();
+
+        try {
+            // Update progress
+            updateProgress('Searching PDFs...', 25);
+
+            const response = await fetch(
+                `http://127.0.0.1:5000/search?subject=${subject}&keyword=${keyword}&start=${startYear}&end=${endYear}`
+            );
+
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+
+            updateProgress('Processing results...', 75);
+            
+            const data = await response.json();
+            const questions = data.questions;
+            const metrics = data.metrics;
+
+            const endTime = performance.now();
+            const responseTime = ((endTime - startTime));
+            responseTimeElement.textContent = `Search completed in ${(responseTime/1000).toFixed(2)} seconds (${(responseTime).toFixed(0)} ms)`;
+
+            if (Array.isArray(questions) && questions.length > 0) {
+                updateProgress('Rendering questions...', 100);
+                displayQuestions(questions, metrics);
+            } else {
+                questionsContainer.innerHTML = '<div class="error">No questions were found for the given criteria.</div>';
+                updateProgress('Search complete, no results found.', 100);
+            }
+        } catch (error) {
+            questionsContainer.innerHTML = `<div class="error">Error: ${error.message}</div>`;
+            updateProgress('Error occurred during search.', 100);
+            responseTimeElement.textContent = '';
+        } finally {
+            setTimeout(() => {
+                progressContainer.style.display = 'none';
+            }, 2000); // Hide after 2 seconds
+        }
+    }
+
+    function updateProgress(description, percentage) {
+        const progressBar = document.getElementById('progress-bar');
+        const progressDescription = document.getElementById('progress-description');
+        progressDescription.textContent = description;
+        progressBar.style.width = `${percentage}%`;
+    }
+
+
+        function displayQuestions(questions, metrics) {
+            questionsContainer.innerHTML = '';
+
+            questions.forEach(question => {
+                const questionDiv = document.createElement('div');
+                questionDiv.classList.add('question', 'animate__animated', 'animate__fadeIn');
+                questionDiv.innerHTML = question.formatted;
+
+                if (question.images && question.images.length > 0) {
+                    const imagesContainer = document.createElement('div');
+                    imagesContainer.classList.add('images-container');
+                    question.images.forEach(imageSrc => {
+                        const imgElement = document.createElement('img');
+                        imgElement.src = imageSrc;
+                        imgElement.alt = 'Question Image';
+                        imagesContainer.appendChild(imgElement);
+                    });
+                    questionDiv.appendChild(imagesContainer);
+                }
+                // Display metrics if available
+                if (metrics && metrics.valid_question_perc !== null) {
+                    const metricsPane = document.getElementById('metrics-pane');
+                    const percentage = metrics.valid_question_perc;
+                    const circumference = 2 * Math.PI * 45; // r = 45
+                    const offset = circumference - (percentage / 100) * circumference;
+
+                    metricsPane.innerHTML = `
+                        <h3 style="font-size: 1.125rem; font-weight: 600; color: var(--text); text-align: center; margin-bottom: 1rem;">
+                            Search Metrics
+                        </h3>
+                        <div class="metrics-gauge">
+                            <svg viewBox="0 0 100 100">
+                                <circle
+                                    cx="50"
+                                    cy="50"
+                                    r="45"
+                                    fill="none"
+                                    stroke="#e2e8f0"
+                                    stroke-width="8"
+                                />
+                                <circle
+                                    cx="50"
+                                    cy="50"
+                                    r="45"
+                                    fill="none"
+                                    stroke="var(--primary)"
+                                    stroke-width="8"
+                                    stroke-dasharray="${circumference}"
+                                    stroke-dashoffset="${offset}"
+                                    style="transition: stroke-dashoffset 0.5s ease"
+                                />
+                            </svg>
+                            <div class="metrics-gauge-value">
+                                <span style="font-size: 1.875rem; font-weight: 700; color: var(--primary);">
+                                    ${percentage}%
+                                </span>
+                                <p style="font-size: 0.875rem; color: var(--text);">Valid Questions</p>
+                            </div>
+                        </div>
+                        <p class="metrics-description">
+                            Percent of desired questions were found from total questions searched.
+                        </p>
+                    `;
+                    // Display total question count
+                    metricsPane.innerHTML += `
+                        <p style="text-align: center; font-size: 0.875rem; color: var(--text); margin-top: 1rem;">
+                            Total Questions Searched: ${metrics.total_questions}</p>
+                    `;
+                    metricsPane.style.display = 'block';
+                }
+            
+                questionsContainer.appendChild(questionDiv);
+                
+            });
+
+        }
+    </script>
+</body>
+</html>
