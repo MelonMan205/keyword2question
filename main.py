@@ -9,14 +9,8 @@ import requests
 import io
 from io import BytesIO
 from PyPDF2 import PdfReader
-#from fitz import get_pixmap
-#from pdf2image import convert_from_path
 from PIL import Image
-import pytesseract
-#import spacy
-#from spacy.matcher import PhraseMatcher
 import os
-#nlp = spacy.load('en_core_web_sm')
 import fitz
 import base64
 from bs4 import BeautifulSoup
@@ -27,19 +21,46 @@ import torch
 from typing import List, Tuple
 import concurrent.futures
 from concurrent.futures import ThreadPoolExecutor
+import asyncio
+import aiohttp
 
 
-verbose = False
+verbose = True
 #res time with verbose = 7672 ms, wo = 6858 ms
 
 class SemanticSearch:
-    def __init__(self, model_name: str = 'all-MiniLM-L6-v2'):
+    def __init__(self, model_name: str = 'all-MiniLM-L6-v2', batch_size: int = 32):
         """
         Initialize with a lightweight model.
         all-MiniLM-L6-v2 is very small (~80MB) and fast while maintaining good accuracy
+        
+        args:
+            model_name: str - name of SentenceTransformer model
+            batch_size: int - batch size for comparing texts
+        
         """
         self.model = SentenceTransformer(model_name)
-        
+        self.batch_size = batch_size
+    def compare_text_batch(self, text: str, keyword: str, threshold: float) -> bool:
+        """
+        Compare text with keyword using semantic similarity
+        Returns True if semantically similar above threshold
+        """
+        batches = [text[i:i+self.batch_size] for i in range(0, len(text), self.batch_size)]
+        results = []
+
+        for batch in batches:
+            pairs = [[text, keyword] for text in batch]
+            flat_texts = [item for pair in pairs for item in pair]
+            embeddings = self.model.encode(flat_texts, convert_to_tensor=True)
+            text_embeddings = embeddings[::2]
+            keyword_embeddings = embeddings[1::2]
+            similarities = torch.nn.functional.cosine_similarity(text_embeddings, keyword_embeddings)
+            batch_results = similarities > threshold
+            results.extend(batch_results)
+
+        return results
+
     def compare_text(self, text: str, keyword: str, threshold: float) -> bool:
         """
         Compare text with keyword using semantic similarity
@@ -105,16 +126,34 @@ def formatQuestions(questions):
     return res
 
 
-def fetchPDF(url):
+async def fetchPDF(url, session: aiohttp.ClientSession):
     try:
-        response = requests.get(url, stream=True)
-        response.raise_for_status()
-        pdf_data = BytesIO(response.content)
-        return pdf_data
+        async with session.get(url) as response:
+            if response.status == 200:
+                content = await response.read()
+                if content.startswith(b'%PDF'):
+                    return content
+                
+                print(f"Invalid PDF content from {url}") if verbose else None
+                return None
+            print(f"Error accessing PDF URL: {response.status}") if verbose else None
+            return None
+        # response = requests.get(url, stream=True)
+        # response.raise_for_status()
+        # pdf_data = BytesIO(response.content)
+        # return pdf_data
     except requests.exceptions.RequestException as e:
         print(f"Error accessing PDF URL: {e}")
         return None
 
+async def fetchallPDFs(urls: List[str]):
+    async with aiohttp.ClientSession() as session:
+        tasks = [fetchPDF(url, session) for url in urls]
+        results = await asyncio.gather(*tasks, return_exceptions=True)
+
+        valid_pdfs = [pdf for pdf in results if isinstance(pdf, bytes) and pdf is not None]
+        return valid_pdfs
+    
 def process_page(page, page_num, page_year_mapping, scaled_threshold, keyword, subject):
     """Process single PDF page and return questions found"""
     text = page.get_text()
@@ -126,9 +165,14 @@ def process_page(page, page_num, page_year_mapping, scaled_threshold, keyword, s
     year = next((y for s, e, y in page_year_mapping if s <= page_num <= e), "Unknown Year")
     split_pairs = re.findall(r'\nQuestion\s+(\d+)\s*(.*?)(?=\nQuestion\s+\d+|$)', text, re.DOTALL)
     print(f"Page split_pairs: {split_pairs}") if verbose else None
-    valid_pairs = [(num, content.strip()) 
-                   for num, content in split_pairs 
-                   if semantic_searcher.compare_text(content.strip(), keyword, scaled_threshold)]
+
+    contents = [content.strip() for _, content in split_pairs]
+    valid_indices = semantic_searcher.compare_text_batch(contents, keyword, scaled_threshold)
+
+    valid_pairs = [(num, content) 
+                   for (num, content), is_valid in zip(split_pairs, valid_indices) 
+                   if is_valid]
+    
     print(f"Page split_questions (valid_question): {valid_pairs}") if verbose else None
     for q_num, question in valid_pairs:
         pix = page.get_pixmap(dpi=300)
@@ -145,7 +189,7 @@ def process_page(page, page_num, page_year_mapping, scaled_threshold, keyword, s
     
     return questions, len(split_pairs), len(valid_pairs)
 
-def returnQuestions(subject, keyword, start, end, threshold):
+async def returnQuestions(subject, keyword, start, end, threshold):
     try:
         total_qs = 0
         total_valid_qs = 0
@@ -162,13 +206,19 @@ def returnQuestions(subject, keyword, start, end, threshold):
             return None, 200
         
         # Fetch PDFs concurrently
-        with ThreadPoolExecutor() as executor:
-            pdfs = list(executor.map(fetchPDF, urls))
+        pdfs =  await fetchallPDFs(urls)
+
+        # with ThreadPoolExecutor() as executor:
+        #     pdfs = list(executor.map(fetchPDF, urls))
+
+        if not pdfs:
+            return [], 200
 
         # Process PDFs
         for pdf_data, year in zip(pdfs, years):
             if pdf_data:
-                open_pdf = fitz.open(stream=pdf_data, filetype="pdf")
+                stream = BytesIO(pdf_data)
+                open_pdf = fitz.open(stream=stream, filetype="pdf")
                 start_page = pdf_document.page_count
                 pdf_document.insert_pdf(open_pdf)
                 end_page = pdf_document.page_count - 1
@@ -201,9 +251,6 @@ def returnQuestions(subject, keyword, start, end, threshold):
                 total_valid_qs += page_valid
 
         pdf_document.close()
-        if os.path.exists("/temp.pdf"):
-            os.remove("/temp.pdf")
-
         formatted_questions = formatQuestions(all_questions)
         metrics_data = metrics(total_qs, total_valid_qs)
         
