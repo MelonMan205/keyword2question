@@ -1,29 +1,34 @@
 from flask import Flask, request, send_file, Response, jsonify
+from functools import partial
 from flask_cors import CORS
 import requests
 from io import BytesIO
-from main import verbose
+from main import verbose, normalise
+import aiohttp
+import asyncio
 
 app = Flask(__name__)
 CORS(app)
 
 from main import returnQuestions, getSearchURL
+from flask import render_template
+
+@app.route('/')
+def home():
+    return render_template('home.html')
 
 @app.route('/search', methods=['GET'])
-def search():
+async def search():
     subject = request.args.get('subject')
     keyword = request.args.get('keyword')
     start = int(request.args.get('start', type=int))
     end = int(request.args.get('end', type=int))
+    threshold = float(request.args.get('threshold', type=float))
     #ADD MATCHING THRESHOLD PARAMETER FOR TEXT SIMILARITY
-    
-    #targeturl = f'https://via.placeholder.com/300.png'
 
-    print(f"FETCHING URL: {subject}, KEYWORD: {keyword}, START: {start}, END: {end}") if verbose else None
+    print(f"FETCHING URL: {subject}, KEYWORD: {keyword}, START: {start}, END: {end}, THRESHOLD: {normalise(threshold,0.15,0.35)}") if verbose else None
     try:
-        #response = requests.get(targeturl, stream=True)
-        #questions = returnQuestions(getSearchURL(subject, keyword), keyword)
-        questions, metrics = returnQuestions(subject, keyword, start, end) if start and end else returnQuestions(subject, keyword, 2023, 2023)
+        questions, metrics = await returnQuestions(subject, keyword, start, end, threshold) if start and end else await returnQuestions(subject, keyword, 2023, 2023, threshold)
         
         if questions:
             #print(questions["formatted"])
@@ -39,7 +44,6 @@ def search():
         else:
             return f"Error: Unable to Fetch Image from {subject}", 404
         
-        
     except requests.RequestException as e:
         return f"Error: {str(e)}", 500
     
@@ -48,22 +52,3 @@ if __name__ == '__main__':
     app.run(debug=True)
 
 
-
-"""
-    try:
-        #response = requests.get(targeturl, stream=True)
-        img_buffer = scrape_webpage(subject, keyword)
-        
-        if response.status_code == 200:
-            return Response(
-                response.content,
-                content_type=response.headers['Content-Type']
-            )
-        # For now, just return a placeholder image
-        else:
-            return f"Error: Unable to Fetch Image from {targeturl}", 404
-    except requests.RequestException as e:
-        return f"Error: {str(e)}", 500
-
-
-"""
