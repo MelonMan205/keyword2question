@@ -49,6 +49,6 @@ async def search():
     
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(debug=True, threaded=True) #using threaded to handle multiple requests (don't need it on gunicorn server)
 
 
