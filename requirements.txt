@@ -1,0 +1,15 @@
+asyncio>=3.4.3
+beautifulsoup4>=4.10.0
+bs4  # Alias for BeautifulSoup, sometimes included by default
+fitz  # Often distributed as PyMuPDF
+Flask>=2.1.1
+flask-cors>=3.0.10
+Pillow>=9.2.0
+PyPDF2>=3.0.0
+requests>=2.27.1
+sentence-transformers>=2.2.2
+torch>=1.11.0
+typing-extensions>=4.1.1  # Comes with newer Python versions
+flask-caching
+
+
