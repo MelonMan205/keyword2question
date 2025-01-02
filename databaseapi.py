@@ -2,6 +2,8 @@ import json
 import os
 from main import semantic_searcher
 from main import verbose
+# import asyncio
+# import aiohttp
 
 with open('vcaa_exams_major.json', 'r') as f:
     data = json.load(f)
@@ -11,7 +13,7 @@ import re
 def getURL(subject, year_range):
     urls = []
 
-    subject = semantic_searcher.find_best_subject_match(subject, list(data.keys()))
+    subject = semantic_searcher.find_best_subject_match(subject, tuple(data.keys()))
     if subject:
         for year in year_range:
             if year in data[subject] and subject in data:
