@@ -3,9 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <title>VCE Question Search</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/noUiSlider/15.7.0/nouislider.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
+    <link rel="icon" href="icon.png" type="image/png">
     <style>
         :root {
             --primary: #6366f1;
@@ -281,30 +283,229 @@
         box-shadow: 0 4px 6px -1px var(--shadow), 0 2px 4px -2px var(--shadow);
         border: 1px solid var(--border);
         z-index: 10;
-        }
+    }
 
         @media (max-width: 1200px) {
             #metrics-pane {
                 display: none;
             }
         }
+        .threshold-range {
+        position: absolute;
+        right: 2rem;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 60px;
+        height: 150px;
+    }
+
+    .threshold-container {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-top: 1rem;
+    }
+
+    .threshold-slider {
+        -webkit-appearance: none;
+        width: 200px;
+        height: 4px;
+        background: var(--border);
+        border-radius: 2px;
+    }
+
+    .threshold-slider::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        width: 16px;
+        height: 16px;
+        border-radius: 50%;
+        background: var(--primary);
+        cursor: pointer;
+        border: 2px solid white;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+
+    .threshold-value {
+        min-width: 2.5rem;
+        text-align: right;
+    }
+    #download-container {
+        width: 100%;
+        margin-top: 1rem;
+        padding-top: 1rem;
+        border-top: 1px solid var(--border);
+    }
+
+    .download-button {
+        width: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        background-color: var(--primary);
+        color: white;
+        padding: 0.5rem 1rem;
+        border-radius: 0.5rem;
+        border: none;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        font-size: 0.875rem;
+    }
+
+    .download-button:hover {
+        background-color: var(--primary-hover);
+        transform: translateY(-1px);
+        box-shadow: 0 4px 6px rgba(99, 102, 241, 0.2);
+    }
+
+    .download-button svg {
+        transition: transform 0.2s ease;
+    }
+
+    .download-button:hover svg {
+        transform: translateY(2px);
+    }
+
+    .download-button:active {
+        transform: translateY(0);
+        box-shadow: 0 2px 4px rgba(99, 102, 241, 0.1);
+    }
+
+    @media (max-width: 1200px) {
+        #metrics-pane {
+            display: none;
+        }
+    }
+    .intro-section {
+        margin-bottom: 2rem;
+        text-align: center;
+        max-width: 800px;
+        margin-left: auto;
+        margin-right: auto;
+    }
+
+    .tagline {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: var(--primary);
+        margin-bottom: 1rem;
+        line-height: 1.2;
+        letter-spacing: -0.025em;
+    }
+
+    .description {
+        font-size: 1.125rem;
+        color: var(--text);
+        opacity: 0.9;
+        line-height: 1.6;
+    }
+
+    .disclaimers {
+        margin-top: 3rem;
+        margin-bottom: 2rem;
+        border-top: 1px solid var(--border);
+        padding-top: 2rem;
+    }
+
+    .disclaimer-content {
+        max-width: 800px;
+        margin: 0 auto;
+        color: var(--text);
+        opacity: 0.8;
+    }
+
+    .disclaimer-content h3 {
+        font-size: 1.25rem;
+        font-weight: 600;
+        margin-bottom: 1rem;
+        color: var(--text);
+    }
+
+    .disclaimer-content ul {
+        list-style-type: none;
+        padding: 0;
+        margin-bottom: 2rem;
+    }
+
+    .disclaimer-content ul li {
+        margin-bottom: 0.75rem;
+        padding-left: 1.5rem;
+        position: relative;
+    }
+
+    .disclaimer-content ul li:before {
+        content: "•";
+        color: var(--primary);
+        position: absolute;
+        left: 0;
+    }
+
+    .attribution {
+        text-align: center;
+        font-size: 0.875rem;
+        color: var(--text);
+        opacity: 0.7;
+        border-top: 1px solid var(--border);
+        padding-top: 1.5rem;
+        margin-top: 2rem;
+    }
+
+    .attribution p {
+        margin-bottom: 0.5rem;
+    }
+
+    @media (max-width: 768px) {
+        .tagline {
+            font-size: 0.5rem;
+        }
+
+        .description {
+            font-size: 1rem;
+            padding: 0 1rem;
+        }
+
+        .disclaimer-content {
+            padding: 0 1rem;
+        }
+    }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="search-card animate__animated animate__fadeIn">
             <h1>VCE Exam Question Search</h1>
-
+            <div class="intro-section animate__animated animate__fadeIn">
+                <h3 class="tagline">Fast, Intelligent VCE Exam Search</h3>
+                <p class="description">Search through past VCE exams using AI-powered semantic search. Find questions based on concepts and topics, not just keywords.</p>
+            </div>
             <div class="input-group">
                 <label for="subject">Subject</label>
                 <input id="subject" type="text" placeholder="e.g., Physics">
             </div>
 
             <div class="input-group">
-                <label for="keyword">Keyword</label>
-                <input id="keyword" type="text" placeholder="e.g., Reduction">
+                <label for="keyword">What do you want to search for?</label>
+                <input id="keyword" type="text" placeholder="e.g., Vertical circular motion with friction involved">
+                <div class="threshold-container">
+                    <span class="threshold-label">Detection Accuracy:</span>
+                    <input 
+                        type="range" 
+                        id="similarity-threshold" 
+                        min="0" 
+                        max="100" 
+                        value="60" 
+                        class="threshold-slider">
+                    <span id="threshold-value">60%</span>
+                </div>
             </div>
-
+            <script>
+                document.getElementById('similarity-threshold').addEventListener('input', function() {
+                    document.getElementById('threshold-value').textContent = this.value + '%';
+                    // Update the threshold value in real-time
+                    window.threshold = this.value / 100;
+                });
+            </script>
             <div class="input-group year-range">
                 <label for="year-range">Year Range</label>
                 <div id="year-range-slider"></div>
@@ -320,14 +521,17 @@
                 </div>
             </div>
 
+            
             <div class="button-group">
                 <button class="primary-button" onclick="searchQuestions()">Search Questions</button>
+
                 <div class="view-toggle">
                     <button class="view-button active" onclick="setView('list')">List</button>
                     <button class="view-button" onclick="setView('gallery')">Gallery</button>
                 </div>
             </div>
         </div>
+        
         <div id="response-time" style="text-align: center; margin-top: 1rem; font-size: 0.8rem; color: var(--primary);"></div>
         
         <div id="progress-container" style="display: none; margin: 1rem 0;">
@@ -337,8 +541,34 @@
             </div>
         </div>
         <div id="metrics-pane" class="hidden md:none"></div>
+            <div id="download-container" class="animate__animated animate__fadeIn" style="display: none;">
+                <button id="download-button" class="download-button" onclick="downloadQuestions()">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                        <polyline points="7 10 12 15 17 10"></polyline>
+                        <line x1="12" y1="15" x2="12" y2="3"></line>
+                    </svg>
+                    Download Questions
+                </button>
+            </div>
         <div id="questions-container" class="list-view"></div>
+        <div class="disclaimers animate__animated animate__fadeIn">
+            <div class="disclaimer-content">
+                <h3>Important Information</h3>
+                <ul>
+                    <li>This tool uses AI-powered semantic search to find relevant questions. Results may vary in accuracy depending on search parameters.</li>
+                    <li>Downloaded content should only be used for educational purposes in accordance with VCAA guidelines.</li>
+                    <li>Questions and images are sourced from publicly available VCAA past exams.</li>
+                </ul>
+                
+                <div class="attribution">
+                    <p>© 2024 | VCAA past exam content remains the property of the Victorian Curriculum and Assessment Authority. This website is not affiliated with VCE or the VCAA</p>
+                    <p>Built with semantic search technology and artificial intelligence</p>
+                </div>
+            </div>
+        </div>
     </div>
+    
     
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/noUiSlider/15.7.0/nouislider.min.js"></script>
@@ -362,6 +592,10 @@
         const endYearInput = document.getElementById('end-year-input');
         const loadingSpinner = document.getElementById('loading');
         const questionsContainer = document.getElementById('questions-container');
+
+        document.getElementById('similarity-threshold').addEventListener('input', function() {
+            document.getElementById('threshold-value').textContent = this.value + '%';
+        });
 
         noUiSlider.create(yearSlider, {
             start: [2014, 2023],
@@ -404,6 +638,7 @@
         async function searchQuestions() {
         const subject = document.getElementById('subject').value;
         const keyword = document.getElementById('keyword').value;
+        const threshold = document.getElementById('similarity-threshold').value ;
         const startYear = parseInt(startYearInput.value);
         const endYear = parseInt(endYearInput.value);
         const responseTimeElement = document.getElementById('response-time');
@@ -429,7 +664,7 @@
             updateProgress('Searching PDFs...', 25);
 
             const response = await fetch(
-                `http://127.0.0.1:5000/search?subject=${subject}&keyword=${keyword}&start=${startYear}&end=${endYear}`
+                `http://127.0.0.1:5000/search?subject=${subject}&keyword=${keyword}&start=${startYear}&end=${endYear}&threshold=${threshold}`
             );
 
             if (!response.ok) {
@@ -471,9 +706,14 @@
         progressBar.style.width = `${percentage}%`;
     }
 
+    let currentQuestions = [];
 
         function displayQuestions(questions, metrics) {
+            currentQuestions = questions;
             questionsContainer.innerHTML = '';
+
+            const downloadContainer = document.getElementById('download-container');
+            downloadContainer.style.display = questions.length > 0 ? 'flex' : 'none';
 
             questions.forEach(question => {
                 const questionDiv = document.createElement('div');
@@ -493,7 +733,9 @@
                 }
                 // Display metrics if available
                 if (metrics && metrics.valid_question_perc !== null) {
+                    
                     const metricsPane = document.getElementById('metrics-pane');
+                    const downloadContainer = document.getElementById('download-container');
                     const percentage = metrics.valid_question_perc;
                     const circumference = 2 * Math.PI * 45; // r = 45
                     const offset = circumference - (percentage / 100) * circumference;
@@ -532,7 +774,7 @@
                             </div>
                         </div>
                         <p class="metrics-description">
-                            Percent of desired questions were found from total questions searched.
+                            Percentage of desired questions  found from total questions searched.
                         </p>
                     `;
                     // Display total question count
@@ -540,6 +782,9 @@
                         <p style="text-align: center; font-size: 0.875rem; color: var(--text); margin-top: 1rem;">
                             Total Questions Searched: ${metrics.total_questions}</p>
                     `;
+
+                    metricsPane.appendChild(downloadContainer);
+                    downloadContainer.style.display = questions.length > 0 ? 'block' : 'none';
                     metricsPane.style.display = 'block';
                 }
             
@@ -548,6 +793,72 @@
             });
 
         }
-    </script>
+        async function downloadQuestions() {
+            try {
+                // Create a new jsPDF instance
+                const doc = new jspdf.jsPDF();
+                let yOffset = 20;
+                
+                // Add title
+                doc.setFontSize(16);
+                doc.text('VCE Exam Questions', 20, yOffset);
+                yOffset += 10;
+                
+                subject = document.getElementById('subject').value;
+                keyword = document.getElementById('keyword').value;
+                Year_Range = `${startYearInput.value} - ${endYearInput.value}`;
+
+
+                // Add search parameters
+                doc.setFontSize(12);
+                doc.text(`Subject: ${subject}`, 20, yOffset);
+                yOffset += 7;
+                doc.text(`Keyword: ${keyword}`, 20, yOffset);
+                yOffset += 7;
+                doc.text(`Year Range: ${Year_Range}`, 20, yOffset);
+                yOffset += 15;
+                
+
+                // Process each question
+                for (let i = 0; i < currentQuestions.length; i++) {
+                    const question = currentQuestions[i];
+                    
+                    // Add question header
+                    doc.setFontSize(14);
+                    doc.text(`Question ${question.question_number}${question.question_data}`, 20, yOffset);
+                    yOffset += 10;
+                    
+                    // Add images if available
+                    if (question.images && question.images.length > 0) {
+                        for (const imageSrc of question.images) {
+                            // Convert base64 image to format suitable for PDF
+                            const imgData = imageSrc.split(',')[1];
+                            const img = new Image();
+                            img.src = imageSrc;
+                            
+                            // Add image to PDF
+                            doc.addImage(imgData, 'PNG', 20, yOffset, 170, 170 * (img.height / img.width));
+                            yOffset += 170 * (img.height / img.width) + 10;
+                        }
+                    }
+                    
+                    // Add page break if needed
+                    if (yOffset > 250) {
+                        doc.addPage();
+                        yOffset = 20;
+                    }
+                }
+                
+                // Save the PDF
+                pdf_name = `vce-questions_${subject}_${keyword}_${Year_Range}.pdf`;
+                doc.save(pdf_name);
+                
+            } catch (error) {
+                console.error('Error generating PDF:', error);
+                alert('Error generating PDF. Please try again.');
+            }
+}
+
+</script>
 </body>
 </html>
